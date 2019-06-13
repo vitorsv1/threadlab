@@ -34,7 +34,7 @@ void countFile(char *arg1, char *arg2) {
   char *path2 = malloc(sizeof(char) * 500);
   d = opendir(arg1);
 
-  mkdir(arg2, 0777);
+  mkdir(arg2, s.st_mode);
 
   if (d) {
     while ((dir = readdir(d)) != NULL) {
@@ -67,7 +67,7 @@ void copyPaste(char *arg1, char *arg2) {
   char *path2 = malloc(sizeof(char) * 500);
   d = opendir(arg1);
 
-  mkdir(arg2, 0777);
+  mkdir(arg2, s.st_mode);
 
   if (d) {
     while ((dir = readdir(d)) != NULL) {
@@ -139,57 +139,6 @@ int removeAll(char arg[1024]) {
   return read;
 }
 
-int remove_directory(char path[1024]) {
-  DIR *d = opendir(path);
-  size_t path_len = strlen(path);
-  int r = -1;
-
-  if (d) {
-    struct dirent *p;
-    r = 0;
-    while (!r && (p = readdir(d))) {
-      int r2 = -1;
-      char *buf;
-      size_t len;
-
-      // Cortar fora os dots e dot-dots
-      if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) {
-        continue;
-      }
-
-      len = path_len + strlen(p->d_name) + 2;
-      buf = malloc(len);
-
-      if (buf) {
-        struct stat statbuf;
-
-        snprintf(buf, len, "%s/%s", path, p->d_name);
-
-        if (!stat(buf, &statbuf)) {
-          if (S_ISDIR(statbuf.st_mode)) {
-            // Recursivo
-            r2 = remove_directory(buf);
-          } else {
-            r2 = unlink(buf);
-          }
-        }
-
-        free(buf);
-      }
-
-      r = r2;
-    }
-
-    closedir(d);
-  }
-
-  if (!r) {
-    r = rmdir(path);
-  }
-
-  return r;
-}
-
 void copyFile(char *arg1, char *arg2) {
   struct stat s;
   stat(arg1, &s);
@@ -205,9 +154,9 @@ void copyFile(char *arg1, char *arg2) {
   printf("A1: %s\n", arg1);
   printf("A2: %s\n", arg2);
   if (access((arg1), F_OK) != -1) {
-    file1 = open(buffer, O_RDONLY, 0666);
+    file1 = open(buffer, O_RDONLY, s.st_mode);
     char *buf[1];
-    file2 = open(buffer2, O_CREAT | O_RDWR, 0666);
+    file2 = open(buffer2, O_CREAT | O_RDWR, s.st_mode);
     while (read(file1, buf, 1) > 0 && !cancel) {
       write(file2, buf, 1);
       bytecount++;
